@@ -1,0 +1,9 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "next build",
+  "outputDirectory": ".next",
+  "env": {
+    "FACTOR_API_BASE": "https://api.drivehos.app/api/v1",
+    "FACTOR_TENANT_ID": "96335ac3-5a93-4a29-af8b-08d874801325"
+  }
+}
