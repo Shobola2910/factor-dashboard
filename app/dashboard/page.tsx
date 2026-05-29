@@ -27,7 +27,7 @@ export default function DashboardPage() {
 
       // Quick: first 3 companies only
       for (const c of companies.slice(0, 3)) {
-        const cid = c.id ?? c.uuid ?? c.company_id;
+        const cid = c.uuid ?? c.company_uuid ?? c.company_id ?? c.external_id ?? String(c.id ?? "");
         try {
           const drivers = await fetchDriversSimple(cid);
           totalDrivers += drivers.length;
@@ -55,7 +55,7 @@ export default function DashboardPage() {
       const allViol: any[] = [];
 
       for (const c of companies) {
-        const cid = c.id ?? c.uuid ?? c.company_id;
+        const cid = c.uuid ?? c.company_uuid ?? c.company_id ?? c.external_id ?? String(c.id ?? "");
         try {
           const drivers = await fetchDriversSimple(cid);
           totalDrivers += drivers.length;

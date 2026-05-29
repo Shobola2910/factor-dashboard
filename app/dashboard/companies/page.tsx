@@ -4,6 +4,11 @@ import { fetchCompanies, fetchDriversSimple } from "@/lib/client-api";
 import Spinner from "@/components/Spinner";
 import Link from "next/link";
 
+/** Always return a UUID string, never a numeric id */
+function getUuid(c: any): string {
+  return c.uuid ?? c.company_uuid ?? c.company_id ?? c.external_id ?? String(c.id ?? "");
+}
+
 export default function CompaniesPage() {
   const [companies, setCompanies] = useState<any[]>([]);
   const [driverCounts, setDriverCounts] = useState<Record<string, number>>({});
@@ -14,9 +19,10 @@ export default function CompaniesPage() {
     fetchCompanies()
       .then((list) => {
         setCompanies(list);
-        // Load driver counts in background
+        // Load driver counts in background — use UUID not numeric id
         list.forEach(async (c: any) => {
-          const cid = c.id ?? c.uuid ?? c.company_id;
+          const cid = getUuid(c);
+          if (!cid) return;
           try {
             const drivers = await fetchDriversSimple(cid);
             setDriverCounts((prev) => ({ ...prev, [cid]: drivers.length }));
@@ -61,13 +67,16 @@ export default function CompaniesPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((c, i) => {
-                const cid = c.id ?? c.uuid ?? c.company_id;
+              {filtered.map((c) => {
+                const cid = getUuid(c);
                 const name = c.name ?? c.company_name ?? cid;
+                const shortId = typeof cid === "string" && cid.length > 8
+                  ? cid.slice(0, 8) + "…"
+                  : String(cid);
                 return (
-                  <tr key={cid} className="border-b border-gray-800/50 table-row-hover">
+                  <tr key={cid || c.id} className="border-b border-gray-800/50 table-row-hover">
                     <td className="px-5 py-3 font-medium text-gray-100">{name}</td>
-                    <td className="px-5 py-3 font-mono text-xs text-gray-500">{cid?.slice(0, 8)}…</td>
+                    <td className="px-5 py-3 font-mono text-xs text-gray-500">{shortId}</td>
                     <td className="px-5 py-3">
                       {driverCounts[cid] !== undefined ? (
                         <span className="badge-blue">{driverCounts[cid]} drivers</span>
