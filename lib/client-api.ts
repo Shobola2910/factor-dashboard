@@ -17,18 +17,35 @@ async function proxy(path: string, companyId?: string, method = "GET", body?: an
     },
     body: JSON.stringify({ path, method, body, companyId }),
   });
-  const data = await res.json();
+  let data: any = {};
+  try { data = await res.json(); } catch { data = {}; }
   if (!res.ok) throw new Error(data?.error ?? data?.message ?? `HTTP ${res.status}`);
   return data;
 }
 
 // ─── Companies ───────────────────────────────────────────────────────────────
 
-export async function fetchCompanies() {
-  const data = await proxy("/companies?status=active&limit=100&page=1&group=all");
-  const raw = data?.data ?? data;
-  if (Array.isArray(raw)) return raw;
-  return raw?.items ?? raw?.companies ?? raw?.data ?? [];
+export async function fetchCompanies(): Promise<any[]> {
+  try {
+    const data = await proxy("/companies?status=active&limit=100&page=1&group=all");
+    const raw = data?.data ?? data;
+    let list: any[];
+    if (Array.isArray(raw)) {
+      list = raw;
+    } else {
+      const inner = raw?.items ?? raw?.companies ?? raw?.data ?? raw?.results ?? [];
+      list = Array.isArray(inner) ? inner : [];
+    }
+    // Debug: log first company shape to help diagnose UUID field name
+    if (list.length > 0) {
+      console.log("[fetchCompanies] first company keys:", Object.keys(list[0]));
+      console.log("[fetchCompanies] first company:", JSON.stringify(list[0]));
+    }
+    return list;
+  } catch (e) {
+    console.error("fetchCompanies:", e);
+    return [];
+  }
 }
 
 export async function fetchCompany(companyId: string) {
@@ -38,12 +55,17 @@ export async function fetchCompany(companyId: string) {
 
 // ─── Drivers ─────────────────────────────────────────────────────────────────
 
-export async function fetchDriversSimple(companyId: string) {
-  const data = await proxy("/drivers/simple-with-vehicles", companyId);
-  const raw = data?.data ?? data;
-  if (Array.isArray(raw)) return raw;
-  // handle { items: [...] }
-  return raw?.items ?? raw?.drivers ?? [];
+export async function fetchDriversSimple(companyId: string): Promise<any[]> {
+  try {
+    const data = await proxy("/drivers/simple-with-vehicles", companyId);
+    const raw = data?.data ?? data;
+    if (Array.isArray(raw)) return raw;
+    const inner = raw?.items ?? raw?.drivers ?? raw?.data ?? [];
+    return Array.isArray(inner) ? inner : [];
+  } catch (e) {
+    console.error("fetchDriversSimple:", e);
+    return [];
+  }
 }
 
 export async function fetchDriversFull(companyId: string, page = 1) {
